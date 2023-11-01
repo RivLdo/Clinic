@@ -1,19 +1,12 @@
 import mysql.connector
 import pymysql.cursors
+from Connection import conn_to_database
 
 class Prescription:
     def __init__(self, nama_clinic):
         self.nama_clinic = nama_clinic
         self.__ID_obat = {}
-        # self._nama = {}
-
-        self.conn = pymysql.connect(
-            host='localhost',
-            user='root',
-            password='arrivaldophpMyAdmin-0',
-            database='merge',
-            cursorclass=pymysql.cursors.DictCursor
-        )
+        self.conn = conn_to_database()
 
         if self.conn:
             print('Terhubung ke database MySQL\n')
@@ -29,19 +22,13 @@ class Prescription:
             self.conn.commit()
             self.__ID_obat[ID_Obat] = ID_Obat
             print(f"Obat dengan ID: {ID_Obat} telah ditambahkan di list dan database.")
-        except mysql.connector.Error as err:
+        except pymysql.Error as err:
             print(f'Error saat INSERT: {err}')
         finally:
             cursor.close()
 
-
     def delete_ID(self, ID_Obat):
         cursor = self.conn.cursor()
-        # if ID_Obat in self.__ID_obat:
-        #     print(f"Obat dengan ID: {ID_Obat} telah dihapus dari list dan database.")
-        #     del self.__ID_obat[ID_Obat]
-        # else:
-        #     print(f"Obat dengan ID: {ID_Obat} tidak ada dalam list.")
 
         try:
             delete_query = "DELETE FROM `prescription_data` WHERE `ID_Obat` = %s"
@@ -49,7 +36,7 @@ class Prescription:
             self.conn.commit()
             print(f"Obat dengan ID: {ID_Obat} telah dihapus dari list dan database.")
 
-        except mysql.connector.Error as err:
+        except pymysql.Error as err:
             print(f'Error saat DELETE: {err}')
         finally:
             cursor.close()
@@ -68,25 +55,22 @@ class Prescription:
                 print(f"Obat dengan ID: {ID_Obat} telah diperbarui menjadi {new_ID_Obat} di database.")
             else:
                 print(f"Obat dengan ID: {ID_Obat} tidak ditemukan dalam database, perbaruan tidak dapat dilakukan.")
-        except mysql.connector.Error as err:
+        except pymysql.Error as err:
             print(f'Error saat UPDATE: {err}')
         finally:
             cursor.close()
 
-
     def close_connection(self):
         self.conn.close()
 
-# Contoh penggunaan kelas Prescription
 clinic = Prescription("Clinic A")
 
 # clinic.insert_ID("2")
 # clinic.insert_ID("1002")
 
-clinic.delete_ID("2002")
+# clinic.delete_ID("2005")
 
 # clinic.insert_ID("1005")
-# clinic.update_ID("1002", "2002")
-
+clinic.update_ID("2", "222")
 
 clinic.close_connection()
