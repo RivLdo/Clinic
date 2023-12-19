@@ -19,9 +19,7 @@ class OnlineShopMedis:
         self.total_price = 0
 
         self.connection = pymysql.connect(host='localhost',
-                             user='root',
-                             password='arrivaldophpMyAdmin-0', 
-                             database='merge',
+                             # 
                              cursorclass=pymysql.cursors.DictCursor)
         
         self._username = None
