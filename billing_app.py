@@ -2,10 +2,7 @@ import mysql.connector
 from datetime import datetime
 
 db = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="arrivaldophpMyAdmin-0",
-    database="merge"
+    # 
 )
 
 class BillingSystem:
