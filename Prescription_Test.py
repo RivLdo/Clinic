@@ -1,5 +1,9 @@
 from PrescriptionBase import PrescriptionBase
 import pymysql.cursors
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+import tkinter as tk
+from tkinter import ttk
+
 
 class InsertPrescription(PrescriptionBase):
     def operate(self, ID_Obat):
@@ -16,7 +20,6 @@ class InsertPrescription(PrescriptionBase):
         finally:
             cursor.close()
 
-
 class DeletePrescription(PrescriptionBase):
     def operate(self, ID_Obat):
         cursor = self.conn.cursor()
@@ -31,7 +34,6 @@ class DeletePrescription(PrescriptionBase):
             print(f'Error saat DELETE: {err}')
         finally:
             cursor.close()
-
 
 class UpdatePrescription(PrescriptionBase):
     def operate(self, ID_Obat, new_ID_Obat):
@@ -53,15 +55,97 @@ class UpdatePrescription(PrescriptionBase):
         finally:
             cursor.close()
 
-# Contoh penggunaan
-insert_operation = InsertPrescription("Clinic A")
-delete_operation = DeletePrescription("Clinic A")
-update_operation = UpdatePrescription("Clinic A")
+
+
+class PrescriptionApp:
+    def __init__(self, master):
+        self.master = master
+        # master.title("Prescription App")
+
+        self.tab_control = ttk.Notebook(master)
+
+        self.insert_tab = ttk.Frame(self.tab_control)
+        self.delete_tab = ttk.Frame(self.tab_control)
+        self.update_tab = ttk.Frame(self.tab_control)
+
+        self.tab_control.add(self.insert_tab, text='Insert')
+        self.tab_control.add(self.delete_tab, text='Delete')
+        self.tab_control.add(self.update_tab, text='Update')
+
+        self.tab_control.pack(expand=1, fill='both')
+
+        self.create_insert_tab()
+        self.create_delete_tab()
+        self.create_update_tab()
+
+    def create_insert_tab(self):
+        self.label_insert = tk.Label(self.insert_tab, text="ID Obat untuk ditamnbah:")
+        self.label_insert.grid(row=0, column=0, padx=10, pady=10)
+
+        self.entry_insert = tk.Entry(self.insert_tab)
+        self.entry_insert.grid(row=0, column=1, padx=10, pady=10)
+
+        self.button_insert = tk.Button(self.insert_tab, text="Insert", command=self.insert_operation)
+        self.button_insert.grid(row=1, column=0, columnspan=2, pady=10)
+
+    def create_delete_tab(self):
+        self.label_delete = tk.Label(self.delete_tab, text="ID Obat untuk di buang:")
+        self.label_delete.grid(row=0, column=0, padx=10, pady=10)
+
+        self.entry_delete = tk.Entry(self.delete_tab)
+        self.entry_delete.grid(row=0, column=1, padx=10, pady=10)
+
+        self.button_delete = tk.Button(self.delete_tab, text="Delete", command=self.delete_operation)
+        self.button_delete.grid(row=1, column=0, columnspan=2, pady=10)
+
+    def create_update_tab(self):
+        self.label_update = tk.Label(self.update_tab, text="ID Obat untuk di ambil:")
+        self.label_update.grid(row=0, column=0, padx=10, pady=10)
+
+        self.entry_update_old = tk.Entry(self.update_tab)
+        self.entry_update_old.grid(row=0, column=1, padx=10, pady=10)
+
+        self.label_new_update = tk.Label(self.update_tab, text="ID Obat yang baru:")
+        self.label_new_update.grid(row=1, column=0, padx=10, pady=10)
+
+        self.entry_update_new = tk.Entry(self.update_tab)
+        self.entry_update_new.grid(row=1, column=1, padx=10, pady=10)
+
+        self.button_update = tk.Button(self.update_tab, text="Update", command=self.update_operation)
+        self.button_update.grid(row=2, column=0, columnspan=2, pady=10)
+
+    def insert_operation(self):
+        ID_Obat = self.entry_insert.get()
+        insert_operation = InsertPrescription("Clinic A")
+        insert_operation.operate(ID_Obat)
+        insert_operation.close_connection()
+
+    def delete_operation(self):
+        ID_Obat = self.entry_delete.get()
+        delete_operation = DeletePrescription("Clinic A")
+        delete_operation.operate(ID_Obat)
+        delete_operation.close_connection()
+
+    def update_operation(self):
+        ID_Obat = self.entry_update_old.get()
+        new_ID_Obat = self.entry_update_new.get()
+        update_operation = UpdatePrescription("Clinic A")
+        update_operation.operate(ID_Obat, new_ID_Obat)
+        update_operation.close_connection()
+
+# root = tk.Tk()
+# app = PrescriptionApp(root)
+# root.mainloop()
+
+
+# insert_operation = InsertPrescription("Clinic A")
+# delete_operation = DeletePrescription("Clinic A")
+# update_operation = UpdatePrescription("Clinic A")
 
 # insert_operation.operate("3")
-delete_operation.operate("3333")
+# delete_operation.operate("3333")
 # update_operation.operate("3", "3333")
 
-insert_operation.close_connection()
-delete_operation.close_connection()
-update_operation.close_connection()
+# insert_operation.close_connection()
+# delete_operation.close_connection()
+# update_operation.close_connection()
