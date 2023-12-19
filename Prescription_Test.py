@@ -34,6 +34,20 @@ class DeletePrescription(PrescriptionBase):
             print(f'Error saat DELETE: {err}')
         finally:
             cursor.close()
+            
+    def get_all_data(self):
+        cursor = self.conn.cursor()
+
+        try:
+            select_query = "SELECT * FROM `prescription_data`"
+            cursor.execute(select_query)
+            data = cursor.fetchall()
+            return data
+        except pymysql.Error as err:
+            print(f'Error saat SELECT: {err}')
+            return []
+        finally:
+            cursor.close()
 
 class UpdatePrescription(PrescriptionBase):
     def operate(self, ID_Obat, new_ID_Obat):
@@ -78,6 +92,12 @@ class PrescriptionApp:
         self.create_delete_tab()
         self.create_update_tab()
 
+        self.delete_listbox = tk.Listbox(self.delete_tab)
+        self.delete_listbox.grid(row=2, column=0, columnspan=2, pady=10)
+        self.update_delete_listbox()
+
+        
+
     def create_insert_tab(self):
         self.label_insert = tk.Label(self.insert_tab, text="ID Obat untuk ditamnbah:")
         self.label_insert.grid(row=0, column=0, padx=10, pady=10)
@@ -88,8 +108,19 @@ class PrescriptionApp:
         self.button_insert = tk.Button(self.insert_tab, text="Insert", command=self.insert_operation)
         self.button_insert.grid(row=1, column=0, columnspan=2, pady=10)
 
+    def update_delete_listbox(self):
+        # Fungsi untuk mengupdate listbox dengan data dari database
+        delete_operation = DeletePrescription("Clinic A")
+        data = delete_operation.get_all_data()
+        delete_operation.close_connection()
+
+        self.delete_listbox.delete(0, tk.END)  # Menghapus data lama dari listbox
+
+        for item in data:
+            self.delete_listbox.insert(tk.END, item)
+
     def create_delete_tab(self):
-        self.label_delete = tk.Label(self.delete_tab, text="ID Obat untuk di buang:")
+        self.label_delete = tk.Label(self.delete_tab, text="ID Obat untuk dihapus:")
         self.label_delete.grid(row=0, column=0, padx=10, pady=10)
 
         self.entry_delete = tk.Entry(self.delete_tab)
@@ -97,6 +128,26 @@ class PrescriptionApp:
 
         self.button_delete = tk.Button(self.delete_tab, text="Delete", command=self.delete_operation)
         self.button_delete.grid(row=1, column=0, columnspan=2, pady=10)
+
+        # Tambahkan listbox dan scrollbar
+        self.listbox_data = tk.Listbox(self.delete_tab, height=10, width=10)
+        self.listbox_data.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
+
+        scrollbar = tk.Scrollbar(self.delete_tab, orient="vertical", command=self.listbox_data.yview)
+        scrollbar.grid(row=2, column=2, pady=10, sticky="ns")
+        self.listbox_data.config(yscrollcommand=scrollbar.set)
+
+
+
+    def delete_operation(self):
+        ID_Obat = self.entry_delete.get()
+        delete_operation = DeletePrescription("Clinic A")
+        delete_operation.operate(ID_Obat)
+        delete_operation.close_connection()
+
+        # Update listbox setelah melakukan operasi delete
+        self.update_delete_listbox()
+
 
     def create_update_tab(self):
         self.label_update = tk.Label(self.update_tab, text="ID Obat untuk di ambil:")
