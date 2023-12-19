@@ -3,10 +3,7 @@ import mysql.connector
 
 # Establish a connection to a MySQL database using the mysql.connector library
 db =mysql.connector.connect(
-    host = 'localhost',
-    user = 'root',
-    password = 'arrivaldophpMyAdmin-0',
-    database = 'merge',
+    # 
 ) 
 
 # Create a database cursor to interact with the database
