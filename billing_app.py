@@ -4,8 +4,8 @@ from datetime import datetime
 db = mysql.connector.connect(
     host="localhost",
     user="root",
-    password="",
-    database="phpmyadmin"
+    password="arrivaldophpMyAdmin-0",
+    database="merge"
 )
 
 class BillingSystem:
@@ -102,7 +102,18 @@ class BillingSystem:
             invoice_number, customer_name, invoice_date, total_amount, status = invoice
             formatted_date = str(invoice_date)
             print("{:<4} {:<20} {:<15} {:<15} {:<10}".format(invoice_number, customer_name, formatted_date, total_amount, status))
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    def view_shop(self):
+        print("{:<4} {:<20} {:<15} {:<15} {:<10}".format("No", "Customer Name", "Invoice Date", "Total Amount (Rp)", "Status"))
+        print("=" * 70)
 
+        sql = "SELECT order_id, customer_id, username, date, total_amount AS status FROM orders"
+        self._cursor.execute(sql)
+        shop = self._cursor.fetchall()
+        for shoping in shop:
+            order_id, customer_id, username, date, total_amount = shoping
+            print("{:<4} {:<20} {:<15} {:<15} {:<10}".format(order_id, customer_id, username, date, total_amount))
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def close_connection(self):
         self._cursor.close()
         self._db.close()
@@ -118,7 +129,7 @@ if __name__ == '__main__':
         print("3. Menghapus Faktur")
         print("4. Lihat Faktur")
         print("5. Keluar")
-        choice = input("Pilih tindakan (1/2/3/4/5): ")
+        choice = input("Pilih tindakan (1/2/3/4/5/6): ")
 
         if choice == '1':
             billing_system.create_invoice()
@@ -130,6 +141,8 @@ if __name__ == '__main__':
             billing_system.view_invoices()
         elif choice == '5':
             billing_system.close_connection()
+        elif choice == '6':
+            billing_system.view_shop()
             break
         else:
             print("Pilihan tidak valid. Silakan pilih 1, 2, 3, 4, atau 5.")
