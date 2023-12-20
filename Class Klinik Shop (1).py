@@ -1,31 +1,37 @@
+from abc import ABC, abstractmethod
 import datetime
 import pymysql.cursors
 from prettytable import PrettyTable
 
-class OnlineShopMedis:
-    def __init__(self):
-        self.products = [
-            {"nama": "Hansaplast", "harga": 5000},
-            {"nama": "Betadine", "harga": 10000},
-            {"nama": "Thrombophob", "harga": 65000},
-            {"nama": "Verband", "harga": 6000},
-            {"nama": "Redoxon", "harga": 70000},
-            {"nama": "Paramex", "harga": 5000},
-            {"nama": "Panadol", "harga": 15000},
-            {"nama": "Counterpain", "harga": 35000},
-            {"nama": "Salonpas", "harga": 35000}
-        ]
-        self.cart = []
-        self.total_price = 0
+class BaseProduct(ABC):
+    def _init_(self, name, price):
+        self.name = name
+        self.price = price
 
-        self.connection = pymysql.connect(host='localhost',
-                             # 
-                             cursorclass=pymysql.cursors.DictCursor)
-        
+    @abstractmethod
+    def display_info(self):
+        pass
+
+class Product(BaseProduct):
+    def display_info(self):
+        return f"{self.name} - Rp {self.price}"
+
+class BaseCustomer(ABC):
+    def _init_(self, connection, current_customer_id):
+        self.connection = connection
         self._username = None
         self.current_order_id = 0
-        self.current_customer_id = 0
+        self.current_customer_id = current_customer_id
 
+    @abstractmethod
+    def create_account(self):
+        pass
+
+    @abstractmethod
+    def login(self):
+        pass
+
+class Customer(BaseCustomer):
     def create_account(self):
         username = input("Masukkan username baru: ")
         password = input("Masukkan password baru: ")
@@ -35,7 +41,7 @@ class OnlineShopMedis:
                            (self.current_customer_id, username, password))
             self.connection.commit()
             print("Akun berhasil dibuat. Silakan login.")
-            self.current_customer_id += 1  
+            self.current_customer_id += 1
         except Exception as e:
             self.connection.rollback()
             print(f"Error: {e}")
@@ -65,19 +71,91 @@ class OnlineShopMedis:
             else:
                 print("Pilihan tidak valid. Silakan pilih 1 atau 2.")
 
+class OnlineShopMedis(Customer):
+    def _init_(self):
+        super()._init_(
+            connection=pymysql.connect(host='localhost',
+                                       user='root',
+                                       password='',
+                                       database='test2',
+                                       cursorclass=pymysql.cursors.DictCursor),
+            current_customer_id=0
+        )
+        self.products = [
+            Product("Hansaplast", 5000),
+            Product("Betadine", 10000),
+            Product("Thrombophob", 65000),
+            Product("Verband", 6000),
+            Product("Redoxon", 70000),
+            Product("Paramex", 5000),
+            Product("Panadol", 15000),
+            Product("Counterpain", 35000),
+            Product("Salonpas", 35000)
+        ]
+        self.cart = []
+        self.total_price = 0
+
+    def start_shopping(self):
+        customer_id = self.login()
+        if customer_id is None:
+            return
+
+        while True:
+            print("\nSelamat datang di Toko Online Medis")
+            self.show_products()
+
+            product_choice = input("Pilih produk (masukkan nomor produk, q untuk keluar, h untuk hapus barang, c untuk cek keranjang): ")
+            if product_choice == "q":
+                break
+            elif product_choice == "h":
+                self.remove_from_cart_input()
+                continue
+            elif product_choice == "c":
+                self.view_cart()
+                continue
+
+            try:
+                quantity = int(product_choice)
+            except ValueError:
+                print("Masukan tidak valid. Silakan masukkan nomor produk, q, h, atau c.")
+                continue
+
+            quantity = int(input("Jumlah yang akan dibeli: "))
+            self.add_to_cart(product_choice, quantity)
+
+            while True:
+                continue_shopping = input("Lanjut belanja (t), Hapus barang (h), atau Selesai (s)? ")
+                if continue_shopping == "t":
+                    break
+                elif continue_shopping == "h":
+                    self.view_cart()
+                    self.remove_from_cart_input()
+                elif continue_shopping == "s":
+                    self.generate_invoice(customer_id)
+                    return
+                else:
+                    print("Masukan tidak valid. Silakan masukkan t, h, atau s.")
+
+    def remove_from_cart_input(self):
+        if self.cart:
+            cart_choice = input("Pilih produk dalam keranjang yang akan dihapus (masukkan nomor produk): ")
+            self.remove_from_cart(cart_choice)
+        else:
+            print("Keranjang belanja kosong. Tidak ada produk untuk dihapus.")
+
     def show_products(self):
         print("Daftar Produk Medis:")
         for i, product in enumerate(self.products, start=1):
-            print(f"{i}. {product['nama']} - Rp {product['harga']}")
+            print(f"{i}. {product.display_info()}")
 
     def add_to_cart(self, product_choice, quantity):
         product_choice = int(product_choice) - 1
         if 0 <= product_choice < len(self.products):
             product = self.products[product_choice]
-            total_product_price = product['harga'] * quantity
-            self.cart.append({"nama": product["nama"], "jumlah": quantity, "harga": total_product_price})
+            total_product_price = product.price * quantity
+            self.cart.append({"nama": product.name, "jumlah": quantity, "harga": total_product_price})
             self.total_price += total_product_price
-            print(f"{product['nama']} x{quantity} ditambahkan ke keranjang.")
+            print(f"{product.name} x{quantity} ditambahkan ke keranjang.")
             self.view_cart()
         else:
             print("Pilihan produk tidak valid.")
@@ -155,58 +233,7 @@ class OnlineShopMedis:
         print("--------------------------------------------------------------")
         print(f"Total Pembayaran: Rp {total_pembelian}")
         print("==============================================================")
-    
-    def start_shopping(self):
-        customer_id = self.login()
-        if customer_id is None:
-            return
-        
-        while True:
-            print("\nSelamat datang di Toko Online Medis")
-            self.show_products()
-            
-            product_choice = input("Pilih produk (masukkan nomor produk, q untuk keluar, h untuk hapus barang, c untuk cek keranjang): ")
-            if product_choice == "q":
-                break
-            elif product_choice == "h":
-                self.remove_from_cart_input()
-                continue
-            elif product_choice == "c":
-                self.view_cart()
-                continue
 
-            try:
-                quantity = int(product_choice)
-            except ValueError:
-                print("Masukan tidak valid. Silakan masukkan nomor produk, q, h, atau c.")
-                continue
-
-            quantity = int(input("Jumlah yang akan dibeli: "))
-            self.add_to_cart(product_choice, quantity)
-
-            while True:
-                continue_shopping = input("Lanjut belanja (t), Hapus barang (h), atau Selesai (s)? ")
-                if continue_shopping == "t":
-                    break
-                elif continue_shopping == "h":
-                    self.view_cart()
-                    self.remove_from_cart_input()
-                elif continue_shopping == "s":
-                    self.generate_invoice(customer_id)
-                    return
-                else:
-                    print("Masukan tidak valid. Silakan masukkan t, h, atau s.")
-
-    def remove_from_cart_input(self):
-        if self.cart:
-            cart_choice = input("Pilih produk dalam keranjang yang akan dihapus (masukkan nomor produk): ")
-            self.remove_from_cart(cart_choice)
-        else:
-            print("Keranjang belanja kosong. Tidak ada produk untuk dihapus.")
-
-    def print_nota(self):
-        print("Nota Pembelian telah dicetak.")
-
-if __name__ == "__main__":
+if _name_ == "_main_":
     online_shop = OnlineShopMedis()
     online_shop.start_shopping()
