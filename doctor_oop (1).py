@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
 import pymysql
 from abc import ABC, abstractmethod
 
@@ -32,11 +32,12 @@ class Doctor(ABC):
     @abstractmethod
     def insert_to_database(self):
         pass
-
     @abstractmethod
     def select_from_database(self):
         pass
-
+    @abstractmethod
+    def update_in_database(self, new_values):
+        pass
     @abstractmethod
     def delete_from_database(self):
         pass        
@@ -100,10 +101,8 @@ class InternDoctor(Doctor):
         # Override abstract methods
     def insert_to_database(self):
         super().insert_to_database()
-
     def select_from_database(self):
         super().select_from_database()
-
     def delete_from_database(self):
         super().delete_from_database()
 
@@ -125,10 +124,8 @@ class SeniorDoctor(Doctor):
         # Override abstract methods
     def insert_to_database(self):
         super().insert_to_database()
-
     def select_from_database(self):
         super().select_from_database()
-
     def delete_from_database(self):
         super().delete_from_database()
 
@@ -136,24 +133,85 @@ class DocGUI:
     def __init__(self, master):
         self.master = master
         self.master.title("Doctor Management System")
+        self.master.configure(bg="#3498db")
 
-        self.label = tk.Label(master, text="DOCTOR MANAGEMENT", font=("Times New Roman", 20))
-        self.label.pack()
+        # Create a Frame for buttons
+        button_frame = tk.Frame(master, bg="#3498db")
+        button_frame.pack(side="top", padx=10, pady=10)
 
-        self.button_add = tk.Button(master, text="Add Doctor Details", command=self.add_GUI)
-        self.button_add.pack(pady=15)
+        button_style = {'font': ('Arial', 12), 'fg': 'white', 'bg': '#2980b9', 'activebackground': '#2c3e50', 'width': 15}
+        self.button_add = tk.Button(button_frame, text="Add Doctor", command=self.add_GUI, **button_style)
+        self.button_add.pack(side="left", padx=10)
 
-        self.button_get = tk.Button(master, text="Get Doctor Details", command=self.get_GUI)
-        self.button_get.pack(pady=15)
+        self.button_get = tk.Button(button_frame, text="Get Doctor", command=self.get_GUI, **button_style)
+        self.button_get.pack(side="left", padx=10)
 
-        self.button_update = tk.Button(master, text="Update Doctor Details", command=self.update_GUI)
-        self.button_update.pack(pady=15)
+        self.button_update = tk.Button(button_frame, text="Update Doctor", command=self.update_GUI, **button_style)
+        self.button_update.pack(side="left", padx=10)
 
-        self.button_delete = tk.Button(master, text="Delete Doctor Details", command=self.delete_GUI)
-        self.button_delete.pack(pady=15)
+        self.button_delete = tk.Button(button_frame, text="Delete Doctor", command=self.delete_GUI, **button_style)
+        self.button_delete.pack(side="left", padx=10)
 
-        self.button_exit = tk.Button(master, text="EXIT", command=self.master.destroy)
-        self.button_exit.pack(pady=15)
+        self.button_exit = tk.Button(button_frame, text="EXIT", command=self.close_connection_and_exit, **button_style)
+        self.button_exit.pack(side="left", padx=10)
+
+        # Create a Treeview widget to display the doctor details
+        self.tree = ttk.Treeview(
+            master,
+            columns=("ID", "Name", "Gender", "Mobile", "Specialization", "Salary", "Hospital", "Intern Year", "Retirement Year"),
+            show="headings",
+            style="Custom.Treeview"
+        )
+
+        self.tree.heading("ID", text="ID")
+        self.tree.heading("Name", text="Name")
+        self.tree.heading("Gender", text="Gender")
+        self.tree.heading("Mobile", text="Mobile")
+        self.tree.heading("Specialization", text="Specialization")
+        self.tree.heading("Salary", text="Salary")
+        self.tree.heading("Hospital", text="Hospital")
+        self.tree.heading("Intern Year", text="Intern Year")
+        self.tree.heading("Retirement Year", text="Retirement Year")
+
+        heading_style = {'font': ('Arial', 12, 'bold'), 'anchor': 'center', 'foreground': 'white', 'background': '#3498db'}
+        for col in self.tree["columns"]:
+            # self.tree.heading(col, text=col)
+            self.tree.tag_configure(f"{col}_tag", **heading_style)
+            self.tree.heading(col, text=col, anchor='center', command=lambda c=col: self.sort_column(c), image="")
+            # self.tree.column(col, width=140, stretch=tk.NO)
+
+        # Set column sizes and adjust the style
+        self.tree.column("#0", width=0, stretch=tk.NO)
+        for col in self.tree["columns"]:
+            self.tree.column(col, width=135, stretch=tk.NO)
+
+        # Create a vertical scrollbar
+        scrollbar = ttk.Scrollbar(master, orient="vertical", command=self.tree.yview)
+        scrollbar.pack(side="right", fill="y")
+        self.tree.configure(yscrollcommand=scrollbar.set)
+
+        self.tree.pack(expand=True, fill="both", padx=10, pady=10)
+        style = ttk.Style()
+        style.configure("Custom.Treeview", font=('Arial', 10), rowheight=20, background="#3498db", foreground="white",
+                        fieldbackground="#3498db", highlightthickness=0, bd=0)
+        self.tree.pack(expand=True, fill="both")
+        self.load_data_into_table()
+
+    def sort_column(self, col, reverse=False):
+        l = [(self.tree.set(k, col), k) for k in self.tree.get_children('')]
+        l.sort(reverse=reverse)
+        for index, (val, k) in enumerate(l):
+            self.tree.move(k, '', index)
+
+    def load_data_into_table(self):
+        # Clear existing items in the tree
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        cur.execute("SELECT * FROM doctor")
+        results = cur.fetchall()
+
+        for row in results:
+            self.tree.insert("", "end", values=row)
 
     def add_GUI(self):
         #Create a new window for choosing doctor types
@@ -238,7 +296,7 @@ class DocGUI:
             ("Doctor Specialization:", tk.Entry(senior_add_window)),
             ("Doctor Annual Salary:", tk.Entry(senior_add_window)),
             ("Hospital Name:", tk.Entry(senior_add_window)),
-            ("Intern Year:", tk.Entry(senior_add_window)),
+            ("Retirement Year:", tk.Entry(senior_add_window)),
         ]
 
         # Use grid to organize labels and entries in two columns
@@ -310,7 +368,7 @@ class DocGUI:
                     if result[7] is not None:
                         details_str += f"\nIntern Year: {result[7]}\n"
                     if result[8] is not None:
-                        details_str += f"\nSenior Year: {result[8]}\n"
+                        details_str += f"\nRetirement Year: {result[8]}\n"
 
                     messagebox.showinfo("Doctor Information", details_str)
                 else:
@@ -417,12 +475,12 @@ class DocGUI:
 
     def close_connection_and_exit(self):
         # Close the database connection and exit the program
-        self.cur.close()
-        self.db.close()
+        cur.close()
+        db.close()
         self.master.destroy()
 
 if __name__ == "__main__":
     root = tk.Tk()
     gui = DocGUI(root)
-    root.mainloop()
+    root.mainloop()  
 
