@@ -72,15 +72,8 @@ class Customer(BaseCustomer):
                 print("Pilihan tidak valid. Silakan pilih 1 atau 2.")
 
 class OnlineShopMedis(Customer):
-    def _init_(self):
-        super()._init_(
-            connection=pymysql.connect(host='localhost',
-                                       user='root',
-                                       password='',
-                                       database='test2',
-                                       cursorclass=pymysql.cursors.DictCursor),
-            current_customer_id=0
-        )
+    def _init_(self, connection, current_customer_id):
+        super()._init_(connection, current_customer_id)
         self.products = [
             Product("Hansaplast", 5000),
             Product("Betadine", 10000),
@@ -104,7 +97,8 @@ class OnlineShopMedis(Customer):
             print("\nSelamat datang di Toko Online Medis")
             self.show_products()
 
-            product_choice = input("Pilih produk (masukkan nomor produk, q untuk keluar, h untuk hapus barang, c untuk cek keranjang): ")
+            product_choice = input(
+                "Pilih produk (masukkan nomor produk, q untuk keluar, h untuk hapus barang, c untuk cek keranjang): ")
             if product_choice == "q":
                 break
             elif product_choice == "h":
@@ -191,10 +185,11 @@ class OnlineShopMedis(Customer):
         cursor = self.connection.cursor()
 
         try:
-            cursor.execute("INSERT INTO orders (order_id, customer_id, username, date, total_amount) VALUES (%s, %s, %s, %s, %s)",
-                            (self.current_order_id, customer_id, self._username, tanggal1, self.total_price))
+            cursor.execute(
+                "INSERT INTO orders (order_id, customer_id, username, date, total_amount) VALUES (%s, %s, %s, %s, %s)",
+                (self.current_order_id, customer_id, self._username, tanggal1, self.total_price))
             self.connection.commit()
-            self.current_order_id += 1 
+            self.current_order_id += 1
         except Exception as e:
             self.connection.rollback()
             print(f"Error: {e}")
@@ -210,7 +205,7 @@ class OnlineShopMedis(Customer):
         now = datetime.datetime.now()
         tanggal2 = now.strftime("%Y-%m-%d")
         jam = now.strftime("%H:%M")
-    
+
         invoice_table = PrettyTable()
         invoice_table.field_names = ["No.", "Nama Barang", "Kuantitas", "Harga Satuan", "Jumlah Harga"]
 
@@ -235,5 +230,12 @@ class OnlineShopMedis(Customer):
         print("==============================================================")
 
 if _name_ == "_main_":
-    online_shop = OnlineShopMedis()
+    online_shop = OnlineShopMedis(
+        connection=pymysql.connect(host='localhost',
+                                   user='root',
+                                   password='',
+                                   database='test2',
+                                   cursorclass=pymysql.cursors.DictCursor),
+        current_customer_id=0
+    )
     online_shop.start_shopping()
