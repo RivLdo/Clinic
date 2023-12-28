@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from Testfordb import *  #Delete this line, and import you own code
 from GUI_DOC import *
+from PATIENT_GUI import *
 
 #The main GUI
 class Dashboard(tk.Tk):
@@ -50,7 +51,8 @@ class Dashboard(tk.Tk):
         
     def on_patient (self):
         print("Tombol patient diklik")
-
+        self.no_repeat(PatientManagementGUI)
+        
     def on_appointment (self):
         print("Tombol appointment diklik")
 
