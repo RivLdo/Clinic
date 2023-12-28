@@ -8,7 +8,7 @@ db_connection = mysql.connector.connect(
     host="localhost",
     user="root",
     password="",
-    database="kelompok 5"
+    database="merge"
 )
 
 # Create a cursor to execute SQL queries
