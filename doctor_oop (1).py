@@ -59,7 +59,7 @@ class Doctor(ABC):
     def insert_to_database(self):
         sql = "INSERT INTO doctor (doc_ID, doc_name, doc_gender, doc_mobile, doc_specialization, doc_annualSal) VALUES (%s, %s, %s, %s, %s, %s)"
         val = (self.doc_ID, self.doc_name, self.doc_gender, self.__doc_mobile, self.doc_specialization, self.__doc_annualSal)
-    
+
         # Execute INSERT sql query
         cur.execute(sql, val)
         db.commit()
@@ -98,11 +98,18 @@ class InternDoctor(Doctor):
     def get_intern_year(self):
         return self.intern_year
     
-        # Override abstract methods
     def insert_to_database(self):
-        super().insert_to_database()
+        sql = "INSERT INTO doctor (doc_ID, doc_name, doc_gender, doc_mobile, doc_specialization, doc_annualSal, hospital_name, intern_year) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+        val = (self.doc_ID, self.doc_name, self.doc_gender, self.get_doc_mobile(), self.doc_specialization, self.get_doc_annualSal(), self.hospital_name, self.intern_year)
+        cur.execute(sql, val)
+        db.commit()
+        print(f"\n\t{cur.rowcount} Record added into table!")
+
+    # Override abstract methods
     def select_from_database(self):
         super().select_from_database()
+    def update_in_database(self, new_values):
+        super().update_in_database(new_values)    
     def delete_from_database(self):
         super().delete_from_database()
 
@@ -121,11 +128,17 @@ class SeniorDoctor(Doctor):
     def get_retirement_year(self):
         return self.retirement_year
     
-        # Override abstract methods
     def insert_to_database(self):
-        super().insert_to_database()
+        sql = "INSERT INTO doctor (doc_ID, doc_name, doc_gender, doc_mobile, doc_specialization, doc_annualSal, hospital_name, retirement_year) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+        val = (self.doc_ID, self.doc_name, self.doc_gender, self.get_doc_mobile(), self.doc_specialization, self.get_doc_annualSal(), self.hospital_name, self.retirement_year)
+        cur.execute(sql, val)
+        db.commit()
+        print(f"\n\t{cur.rowcount} Record added into table!")
+    # Override abstract methods
     def select_from_database(self):
         super().select_from_database()
+    def update_in_database(self, new_values):
+        super().update_in_database(new_values)     
     def delete_from_database(self):
         super().delete_from_database()
 
@@ -175,10 +188,8 @@ class DocGUI:
 
         heading_style = {'font': ('Arial', 12, 'bold'), 'anchor': 'center', 'foreground': 'white', 'background': '#3498db'}
         for col in self.tree["columns"]:
-            # self.tree.heading(col, text=col)
             self.tree.tag_configure(f"{col}_tag", **heading_style)
             self.tree.heading(col, text=col, anchor='center', command=lambda c=col: self.sort_column(c), image="")
-            # self.tree.column(col, width=140, stretch=tk.NO)
 
         # Set column sizes and adjust the style
         self.tree.column("#0", width=0, stretch=tk.NO)
@@ -274,7 +285,6 @@ class DocGUI:
 
                 messagebox.showinfo("Success", "Doctor details added successfully!")
 
-                # Close the window after adding details
                 intern_add_window.destroy()
             except Exception as e:
                 messagebox.showerror("Error", f"An error occurred: {str(e)}")    
@@ -320,12 +330,10 @@ class DocGUI:
                     retirement_year=values[7]
                 )
 
-                # Insert the doctor details into the database
                 new_doctor.insert_to_database()
 
                 messagebox.showinfo("Success", "Doctor details added successfully!")
 
-                # Close the window after adding details
                 senior_add_window.destroy()
             except Exception as e:
                 messagebox.showerror("Error", f"An error occurred: {str(e)}")    
@@ -416,7 +424,6 @@ class DocGUI:
         # Function to handle updating doctor details in the database
         def update_GUI_db():
             try:
-                # Get values from entry fields
                 doc_id_to_update = doc_id_entry.get()
                 new_name = new_name_entry.get()
                 new_gender = new_gender_entry.get()
@@ -427,12 +434,10 @@ class DocGUI:
                 sql = "UPDATE doctor SET doc_name = %s, doc_gender = %s, doc_mobile = %s, doc_specialization = %s, doc_annualSal = %s WHERE doc_ID = %s"
                 val = (new_name, new_gender, new_mobile, new_specialization, new_annual_sal, doc_id_to_update)
 
-                # Execute the SQL update query
                 cur.execute(sql, val)
                 db.commit()
                 messagebox.showinfo("Success", f"Doctor record with ID {doc_id_to_update} successfully updated!")
 
-                # Close the update_window after updating details
                 update_window.destroy()
             except Exception as e:
                 messagebox.showerror("Error", f"An error occurred: {str(e)}")
@@ -456,17 +461,24 @@ class DocGUI:
         # Function to handle deleting doctor details from the database
         def delete_GUI_db():
             try:
+
                 doc_id_to_delete = doc_id_entry.get()
 
-                # Create a AbstractDoctor object called 'delete' to delete a specific doctor's details
-                delete = Doctor(doc_ID_to_delete=doc_id_to_delete)
+                # Determine the doctor type based on doc_ID_to_delete
+                cur.execute("SELECT intern_year, retirement_year FROM doctor WHERE doc_ID = %s", (doc_id_to_delete,))
+                result = cur.fetchone()
 
-                # Call the delete_from_database method of the Doctor object to initiate the deletion
-                delete.delete_from_database()
+                if result and result[0] is not None:
+                    delete_doctor = InternDoctor(doc_ID_to_delete=doc_id_to_delete)
+                elif result and result[1] is not None:
+                    delete_doctor = SeniorDoctor(doc_ID_to_delete=doc_id_to_delete)
+                else:
+                    delete_doctor = Doctor(doc_ID_to_delete=doc_id_to_delete)
+
+                delete_doctor.delete_from_database()
 
                 messagebox.showinfo("Success", f"Doctor record with ID {doc_id_to_delete} successfully deleted!")
 
-                # Close the delete_window after deleting details
                 delete_window.destroy()
             except Exception as e:
                 messagebox.showerror("Error", f"An error occurred: {str(e)}")
